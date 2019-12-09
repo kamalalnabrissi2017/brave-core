@@ -26,7 +26,9 @@
 #include "chrome/browser/notifications/notification_handler.h"
 #include "components/history/core/browser/history_service_observer.h"
 #include "components/prefs/pref_change_registrar.h"
-#include "mojo/public/cpp/bindings/associated_binding.h"
+#include "mojo/public/cpp/bindings/associated_receiver.h"
+#include "mojo/public/cpp/bindings/associated_remote.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "ui/base/idle/idle.h"
 
 using brave_rewards::RewardsNotificationService;
@@ -464,9 +466,10 @@ class AdsServiceImpl : public AdsService,
   NotificationDisplayService* display_service_;  // NOT OWNED
   brave_rewards::RewardsService* rewards_service_;  // NOT OWNED
 
-  mojo::AssociatedBinding<bat_ads::mojom::BatAdsClient> bat_ads_client_binding_;
-  bat_ads::mojom::BatAdsAssociatedPtr bat_ads_;
-  bat_ads::mojom::BatAdsServicePtr bat_ads_service_;
+  mojo::AssociatedReceiver<bat_ads::mojom::BatAdsClient>
+      bat_ads_client_receiver_;
+  mojo::AssociatedRemote<bat_ads::mojom::BatAds> bat_ads_;
+  mojo::Remote<bat_ads::mojom::BatAdsService> bat_ads_service_;
 
   DISALLOW_COPY_AND_ASSIGN(AdsServiceImpl);
 };
