@@ -681,6 +681,13 @@ bool AdsServiceImpl::StartService() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   DCHECK(!connected());
 
+  // bat_ads_service_ could be already bounded if StartService() was called
+  // before, reset it so we could do BindNewPipeAndPassReceiver() on it again
+  // below.
+  if (bat_ads_service_.is_bound()) {
+    bat_ads_service_.reset();
+  }
+
   auto* connection = content::ServiceManagerConnection::GetForProcess();
   if (!connection) {
     return false;
