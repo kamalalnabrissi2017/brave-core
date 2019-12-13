@@ -8,9 +8,9 @@ chrome.braveSync.onGotInitData.addListener(function(seed, device_id, config, syn
   callbackList["got-init-data"](null, seed, device_id, config);
 });
 
-chrome.braveSync.onFetchSyncRecords.addListener(function(category_names, start_at, max_records) {
+chrome.braveSync.onFetchSyncRecords.addListener(function(category_names, start_at, max_records, previous_fetch_time) {
   console.log(`"fetch-sync-records" category_names=${JSON.stringify(category_names)} start_at=${JSON.stringify(start_at)} max_records=${JSON.stringify(max_records)}`);
-  callbackList["fetch-sync-records"](null, category_names, start_at, max_records);
+  callbackList["fetch-sync-records"](null, category_names, start_at, max_records, previous_fetch_time);
 });
 
 chrome.braveSync.onResolveSyncRecords.addListener(function(category_name, recordsAndExistingObjects) {

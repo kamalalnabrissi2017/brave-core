@@ -48,9 +48,10 @@ class BraveSyncClientImpl : public BraveSyncClient,
   void SendGotInitData(const Uint8Array& seed,
                        const Uint8Array& device_id,
                        const client_data::Config& config) override;
-  void SendFetchSyncRecords(
-    const std::vector<std::string> &category_names, const base::Time &startAt,
-    const int max_records) override;
+  void SendFetchSyncRecords(const std::vector<std::string>& category_names,
+                            const base::Time& start_at,
+                            const int max_records,
+                            const base::Time& last_fetch_time) override;
   void SendResolveSyncRecords(
       const std::string& category_name,
       std::unique_ptr<SyncRecordAndExistingList> records) override;

@@ -33,6 +33,7 @@ const char kSyncLatestRecordTime[] = "brave_sync.latest_record_time";
 const char kSyncLatestDeviceRecordTime[] =
     "brave_sync.latest_device_record_time";
 const char kSyncLastFetchTime[] = "brave_sync.last_fetch_time";
+const char kSyncLastPreferencesFetchTime[] = "brave_sync.last_prefs_fetch_time";
 const char kSyncLastCompactTimeBookmarks[] =
     "brave_sync.last_compact_time.bookmarks";
 const char kSyncDeviceList[] = "brave_sync.device_list";
@@ -172,6 +173,14 @@ void Prefs::SetLastFetchTime(const base::Time &time) {
 
 base::Time Prefs::GetLastFetchTime() {
   return pref_service_->GetTime(kSyncLastFetchTime);
+}
+
+void Prefs::SetLastPreferencesFetchTime(const base::Time& time) {
+  pref_service_->SetTime(kSyncLastPreferencesFetchTime, time);
+}
+
+base::Time Prefs::GetLastPreferencesFetchTime() {
+  return pref_service_->GetTime(kSyncLastPreferencesFetchTime);
 }
 
 void Prefs::SetLastCompactTimeBookmarks(const base::Time &time) {
