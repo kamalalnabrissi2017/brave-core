@@ -60,6 +60,8 @@ void Prefs::RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry) {
   registry->RegisterTimePref(prefs::kSyncLatestRecordTime, base::Time());
   registry->RegisterTimePref(prefs::kSyncLatestDeviceRecordTime, base::Time());
   registry->RegisterTimePref(prefs::kSyncLastFetchTime, base::Time());
+  registry->RegisterTimePref(prefs::kSyncLastPreferencesFetchTime,
+                             base::Time());
   registry->RegisterTimePref(prefs::kSyncLastCompactTimeBookmarks,
                              base::Time());
 
@@ -273,6 +275,7 @@ void Prefs::Clear() {
   pref_service_->ClearPref(kSyncLatestRecordTime);
   pref_service_->ClearPref(kSyncLatestDeviceRecordTime);
   pref_service_->ClearPref(kSyncLastFetchTime);
+  pref_service_->ClearPref(kSyncLastPreferencesFetchTime);
   pref_service_->ClearPref(kSyncDeviceList);
   pref_service_->ClearPref(kSyncApiVersion);
   pref_service_->ClearPref(kSyncMigrateBookmarksVersion);
