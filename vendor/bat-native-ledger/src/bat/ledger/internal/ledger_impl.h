@@ -207,7 +207,7 @@ class LedgerImpl : public ledger::Ledger,
       double balance,
       ledger::RecoverWalletCallback callback);
 
-  void LoadURL(
+  virtual void LoadURL(
       const std::string& url,
       const std::vector<std::string>& headers,
       const std::string& content,

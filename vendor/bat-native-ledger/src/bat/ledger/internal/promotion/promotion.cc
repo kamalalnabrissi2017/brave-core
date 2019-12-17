@@ -537,6 +537,7 @@ void Promotion::OnFetchSignedTokens(
   }
 
   std::string json_creds;
+  // TODO(masparrow): this derefences pointers - but what happens if they aren't present?
   base::JSONWriter::Write(
       *parsed_response.FindListKey("signed_creds"),
       &json_creds);
