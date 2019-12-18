@@ -4364,4 +4364,10 @@ void RewardsServiceImpl::OnGetAnonWalletStatus(
   std::move(callback).Run(static_cast<uint32_t>(result));
 }
 
+void RewardsServiceImpl::RunDBTransaction(
+    ledger::DBTransactionPtr transaction,
+    ledger::RunDBTransactionCallback callback) {
+
+}
+
 }  // namespace brave_rewards

@@ -76,6 +76,8 @@ using GetPromotionCallback = std::function<void(PromotionPtr)>;
 using GetAllUnblindedTokensCallback = std::function<void(UnblindedTokenList)>;
 using GetAllPromotionsCallback = std::function<void(PromotionMap)>;
 
+using RunDBTransactionCallback = std::function<void(DBCommandResponsePtr)>;
+
 class LEDGER_EXPORT LedgerClient {
  public:
   virtual ~LedgerClient() = default;
@@ -319,6 +321,10 @@ class LEDGER_EXPORT LedgerClient {
   virtual ledger::ClientInfoPtr GetClientInfo() = 0;
 
   virtual void UnblindedTokensReady() = 0;
+
+  virtual void RunDBTransaction(
+      ledger::DBTransactionPtr transaction,
+      ledger::RunDBTransactionCallback callback) = 0;
 };
 
 }  // namespace ledger

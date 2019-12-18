@@ -599,6 +599,10 @@ class LedgerImpl : public ledger::Ledger,
 
   void GetAnonWalletStatus(ledger::ResultCallback callback) override;
 
+  void RunDBTransaction(
+      ledger::DBTransactionPtr transaction,
+      ledger::RunDBTransactionCallback callback);
+
  private:
   void OnLoad(ledger::VisitDataPtr visit_data,
               const uint64_t& current_time) override;
