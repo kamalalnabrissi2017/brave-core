@@ -18,8 +18,9 @@ namespace brave_rewards {
 
 namespace {
 
-void HandleBinding(sql::Statement* statement,
-                   const ledger::DBCommandBinding& binding) {
+void HandleBinding(
+    sql::Statement* statement,
+    const ledger::DBCommandBinding& binding) {
   switch (binding.value->which()) {
     case ledger::DBValue::Tag::STRING_VALUE: {
       statement->BindString(binding.index, binding.value->get_string_value());
@@ -96,16 +97,23 @@ RewardsDatabase::RewardsDatabase(const base::FilePath& db_path) :
   DETACH_FROM_SEQUENCE(sequence_checker_);
 }
 
-RewardsDatabase::~RewardsDatabase() {}
+RewardsDatabase::~RewardsDatabase() = default;
 
 void RewardsDatabase::RunTransaction(
     ledger::DBTransactionPtr transaction,
     ledger::DBCommandResponse* response) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-  if (!initialized_) {
-    response->status = ledger::DBCommandResponse::Status::INITIALIZATION_ERROR;
+  if (!response) {
+    response->status = ledger::DBCommandResponse::Status::ERROR;
     return;
+  }
+
+  if (!db_.is_open()) {
+    if (!db_.Open(db_path_)) {
+      response->status = ledger::DBCommandResponse::Status::INITIALIZATION_ERROR;
+      return;
+    }
   }
 
   sql::Transaction committer(&db_);
@@ -119,19 +127,28 @@ void RewardsDatabase::RunTransaction(
 
     switch (command->type) {
       case ledger::DBCommand::Type::INITIALIZE: {
-        status = Initialize(command.get(), response);
+        status = Initialize(
+            transaction->version,
+            transaction->compatible_version,
+            response);
         break;
       }
       case ledger::DBCommand::Type::READ: {
         status = Query(command.get(), response);
         break;
       }
-      case ledger::DBCommand::Type::WRITE: {
+      case ledger::DBCommand::Type::EXECUTE: {
         status = Execute(command.get());
         break;
       }
+      case ledger::DBCommand::Type::RUN: {
+        status = Run(command.get());
+        break;
+      }
       case ledger::DBCommand::Type::MIGRATE: {
-        status = Migrate(command.get());
+        status = Migrate(
+            transaction->version,
+            transaction->compatible_version);
         break;
       }
       default: {
@@ -152,18 +169,13 @@ void RewardsDatabase::RunTransaction(
 }
 
 ledger::DBCommandResponse::Status RewardsDatabase::Initialize(
-    ledger::DBCommand* command,
+    const int32_t version,
+    const int32_t compatible_version,
     ledger::DBCommandResponse* response) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   if (!initialized_) {
-    if (!db_.Open(db_path_))
-      return ledger::DBCommandResponse::Status::INITIALIZATION_ERROR;
-
-    if (!meta_table_.Init(
-        &db_,
-        command->version,
-        command->compatible_version)) {
+    if (!meta_table_.Init(&db_, version, compatible_version)) {
       return ledger::DBCommandResponse::Status::INITIALIZATION_ERROR;
     }
 
@@ -173,23 +185,42 @@ ledger::DBCommandResponse::Status RewardsDatabase::Initialize(
         base::Unretained(this))));
   }
 
-  auto value = ledger::DBValue::New();
-  value->set_int_value(meta_table_.GetVersionNumber());
-  response->result->set_value(std::move(value));
-
   return ledger::DBCommandResponse::Status::OK;
 }
 
 ledger::DBCommandResponse::Status RewardsDatabase::Execute(
     ledger::DBCommand* command) {
+  if (!initialized_) {
+    return ledger::DBCommandResponse::Status::INITIALIZATION_ERROR;
+  }
+
+  bool result = db_.Execute(command->command.c_str());
+
+  if (!result) {
+    LOG(ERROR) << "DB Execute error: " << db_.GetErrorMessage();
+    return ledger::DBCommandResponse::Status::COMMAND_ERROR;
+  }
+
+  return ledger::DBCommandResponse::Status::OK;
+}
+
+ledger::DBCommandResponse::Status RewardsDatabase::Run(
+    ledger::DBCommand* command) {
+  if (!initialized_) {
+    return ledger::DBCommandResponse::Status::INITIALIZATION_ERROR;
+  }
+
   sql::Statement statement(db_.GetCachedStatement(SQL_FROM_HERE,
       command->command.c_str()));
 
-  for (auto const& binding : command->bindings)
+  for (auto const& binding : command->bindings) {
     HandleBinding(&statement, *binding.get());
+  }
 
-  if (statement.Run())
+  if (statement.Run()) {
+    LOG(ERROR) << "DB Run error: " << db_.GetErrorMessage();
     return ledger::DBCommandResponse::Status::COMMAND_ERROR;
+  }
 
   return ledger::DBCommandResponse::Status::OK;
 }
@@ -197,30 +228,39 @@ ledger::DBCommandResponse::Status RewardsDatabase::Execute(
 ledger::DBCommandResponse::Status RewardsDatabase::Query(
     ledger::DBCommand* command,
     ledger::DBCommandResponse* response) {
+  if (!initialized_) {
+    return ledger::DBCommandResponse::Status::INITIALIZATION_ERROR;
+  }
+
   sql::Statement statement(
       db_.GetCachedStatement(SQL_FROM_HERE, command->command.c_str()));
 
-  for (auto const& binding : command->bindings)
+  for (auto const& binding : command->bindings) {
     HandleBinding(&statement, *binding.get());
+  }
 
-  response->result->set_records(std::vector<ledger::DBRecordPtr>());
-  while (statement.Step())
+  auto result = ledger::DBCommandResult::New();
+  result->set_records(std::vector<ledger::DBRecordPtr>());
+  response->result = std::move(result);
+  while (statement.Step()) {
     response->result->get_records().push_back(
         CreateRecord(&statement, command->record_bindings));
+  }
 
   return ledger::DBCommandResponse::Status::OK;
 }
 
 ledger::DBCommandResponse::Status RewardsDatabase::Migrate(
-    ledger::DBCommand* command) {
-  auto status = Execute(command);
-
-  if (status == ledger::DBCommandResponse::Status::OK) {
-    meta_table_.SetVersionNumber(command->version);
-    meta_table_.SetCompatibleVersionNumber(command->compatible_version);
+    const int32_t version,
+    const int32_t compatible_version) {
+  if (!initialized_) {
+    return ledger::DBCommandResponse::Status::INITIALIZATION_ERROR;
   }
 
-  return status;
+  meta_table_.SetVersionNumber(version);
+  meta_table_.SetCompatibleVersionNumber(compatible_version);
+
+  return ledger::DBCommandResponse::Status::OK;
 }
 
 void RewardsDatabase::OnMemoryPressure(

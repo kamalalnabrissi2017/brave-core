@@ -34,6 +34,7 @@ using namespace braveledger_media; //  NOLINT
 using namespace braveledger_bat_state; //  NOLINT
 using namespace braveledger_contribution; //  NOLINT
 using namespace braveledger_wallet; //  NOLINT
+using namespace braveledger_database; //  NOLINT
 using std::placeholders::_1;
 using std::placeholders::_2;
 using std::placeholders::_3;
@@ -58,6 +59,7 @@ LedgerImpl::LedgerImpl(ledger::LedgerClient* client) :
     bat_state_(new BatState(this)),
     bat_contribution_(new Contribution(this)),
     bat_wallet_(new Wallet(this)),
+    bat_database_(new Database(this)),
     initialized_task_scheduler_(false),
     initialized_(false),
     initializing_(false),
@@ -106,17 +108,18 @@ void LedgerImpl::OnWalletInitializedInternal(
 void LedgerImpl::Initialize(ledger::InitializeCallback callback) {
   DCHECK(!initializing_);
   initializing_ = true;
-  ledger::InitializeCallback on_wallet =
+
+  ledger::InitializeCallback finish_callback =
       std::bind(&LedgerImpl::OnWalletInitializedInternal,
-                this,
-                _1,
-                std::move(callback));
-  auto on_load = std::bind(&LedgerImpl::OnLedgerStateLoaded,
+          this,
+          _1,
+          std::move(callback));
+
+  auto database_callback = std::bind(&LedgerImpl::OnDatabaseInitialized,
       this,
       _1,
-      _2,
-      std::move(on_wallet));
-  LoadLedgerState(std::move(on_load));
+      finish_callback);
+  bat_database_->Initialize(database_callback);
 }
 
 void LedgerImpl::CreateWallet(const std::string& safetynet_token,
@@ -346,26 +349,46 @@ void LedgerImpl::OnPublisherStateLoaded(
     ledger::Result result,
     const std::string& data,
     ledger::InitializeCallback callback) {
-  if (result == ledger::Result::LEDGER_OK) {
-    if (!bat_publisher_->loadState(data)) {
-      BLOG(this, ledger::LogLevel::LOG_ERROR) <<
-        "Successfully loaded but failed to parse ledger state.";
-      BLOG(this, ledger::LogLevel::LOG_DEBUG) <<
-        "Failed publisher state: " << data;
-
-      result = ledger::Result::INVALID_PUBLISHER_STATE;
-    }
-  } else {
-    BLOG(this, ledger::LogLevel::LOG_ERROR) <<
-      "Failed to load publisher state";
-      BLOG(this, ledger::LogLevel::LOG_DEBUG) <<
-        "Failed publisher state: " << data;
+  if (result != ledger::Result::LEDGER_OK) {
+    BLOG(this, ledger::LogLevel::LOG_ERROR) << "Failed to load publisher state";
+    BLOG(this, ledger::LogLevel::LOG_DEBUG) <<
+      "Failed publisher state: " << data;
+    callback(result);
+    return;
   }
+
+  if (!bat_publisher_->loadState(data)) {
+    BLOG(this, ledger::LogLevel::LOG_ERROR) <<
+      "Successfully loaded but failed to parse ledger state.";
+    BLOG(this, ledger::LogLevel::LOG_DEBUG) <<
+      "Failed publisher state: " << data;
+
+    callback(ledger::Result::INVALID_PUBLISHER_STATE);
+    return;
+  }
+
   if (GetPaymentId().empty() || GetWalletPassphrase().empty()) {
     callback(ledger::Result::CORRUPTED_WALLET);
-  } else {
-    callback(result);
+    return;
   }
+
+  callback(result);
+}
+
+void LedgerImpl::OnDatabaseInitialized(
+    const ledger::Result result,
+    ledger::InitializeCallback callback) {
+  if (result != ledger::Result::LEDGER_OK) {
+    callback(result);
+    return;
+  }
+
+  auto on_load = std::bind(&LedgerImpl::OnLedgerStateLoaded,
+      this,
+      _1,
+      _2,
+      std::move(callback));
+  LoadLedgerState(on_load);
 }
 
 void LedgerImpl::SaveLedgerState(const std::string& data) {
