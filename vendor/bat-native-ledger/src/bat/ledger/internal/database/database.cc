@@ -63,16 +63,41 @@ void Database::OnInitialize(
 }
 
 void Database::InitializeTables(ledger::DBTransaction* transaction) {
-  const std::string query =
+  const std::string create =
       "CREATE TABLE IF NOT EXISTS test_db ("
         "field_1 INTEGER DEFAULT 0 NOT NULL,"
         "field_2 INTEGER DEFAULT 0 NOT NULL"
       ")";
 
-  auto command = ledger::DBCommand::New();
-  command->type = ledger::DBCommand::Type::EXECUTE;
-  command->command = query;
-  transaction->commands.push_back(std::move(command));
+  auto create_command = ledger::DBCommand::New();
+  create_command->type = ledger::DBCommand::Type::EXECUTE;
+  create_command->command = create;
+  transaction->commands.push_back(std::move(create_command));
+
+  const std::string insert =
+    "INSERT INTO test_db (field_1, field_2) VALUES (?, ?)";
+
+  auto insert_command = ledger::DBCommand::New();
+  insert_command->type = ledger::DBCommand::Type::RUN;
+  insert_command->command = insert;
+
+  auto value = ledger::DBValue::New();
+  value->set_int_value(5);
+
+  auto binding = ledger::DBCommandBinding::New();
+  binding->index = 0;
+  binding->value = std::move(value);
+  insert_command->bindings.push_back(std::move(binding));
+
+  value = ledger::DBValue::New();
+  value->set_int_value(7);
+
+  binding = ledger::DBCommandBinding::New();
+  binding->index = 1;
+  binding->value = std::move(value);
+  insert_command->bindings.push_back(std::move(binding));
+
+  transaction->commands.push_back(std::move(insert_command));
 }
 
 }  // namespace braveledger_database
