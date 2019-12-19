@@ -317,7 +317,7 @@ class LedgerImpl : public ledger::Ledger,
       const std::string& viewing_id,
       const ledger::CurrentReconcileProperties& reconcile);
 
-  const std::string& GetPaymentId() const;
+  virtual const std::string& GetPaymentId() const;
 
   const std::string& GetPersonaId() const;
 

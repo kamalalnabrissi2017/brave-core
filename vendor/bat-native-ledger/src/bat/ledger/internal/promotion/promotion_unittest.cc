@@ -80,16 +80,33 @@ TEST_F(PromotionTest, TestFetchWithNoWalletPaymentID) {
   EXPECT_TRUE(callback_called);
 }
 
-// Mock Ledger w/ empty passphrase
-// FAIL: wallet with no passphrase;
-// - expect 'callback' with 'ledger::Result:CORRUPTED_WALLET'
-// - expect ledger_->OnWalletProperties with with 'ledger::Result:CORRUPTED_WALLET'
 TEST_F(PromotionTest, TestFetchWithNoWalletPassphrase) {
   // Arrange
+  EXPECT_CALL(*mock_ledger_impl_,
+      OnWalletProperties(ledger::Result::CORRUPTED_WALLET, _));
+  const std::string payment_id = "bob";
+  ON_CALL(*mock_ledger_impl_, GetPaymentId())
+      .WillByDefault(testing::ReturnRef(payment_id));
+  const std::string wallet_passphrase = "";
+  ON_CALL(*mock_ledger_impl_, GetWalletPassphrase())
+      .WillByDefault(testing::Return(wallet_passphrase));
+
+  bool callback_called = false;
+
+  ledger::FetchPromotionCallback fetch_promotion_callback =
+      std::bind(
+          [&callback_called](ledger::Result result,
+              ledger::PromotionList promotions) {
+            callback_called = true;
+            EXPECT_EQ(result, ledger::Result::CORRUPTED_WALLET);
+          },
+      _1, _2);
 
   // Act
+  promotion_->Fetch(fetch_promotion_callback);
 
   // Assert
+  EXPECT_TRUE(callback_called);
 }
 // Mock Ledger w/ payment id
 // Mock Ledger w/ client info
@@ -98,12 +115,35 @@ TEST_F(PromotionTest, TestFetchWithNoWalletPassphrase) {
 // - expect ledger_->LoadURL with expected URL
 // OR expect callback Promotion::OnFetch with expected URL
 TEST_F(PromotionTest, TestFetch) {
+/*  
   // Arrange
+  EXPECT_CALL(*mock_ledger_impl_,
+      LoadURL(, _));
+  const std::string payment_id = "bob";
+  ON_CALL(*mock_ledger_impl_, GetPaymentId())
+      .WillByDefault(testing::ReturnRef(payment_id));
+  const std::string wallet_passphrase = "fred";
+  ON_CALL(*mock_ledger_impl_, GetWalletPassphrase())
+      .WillByDefault(testing::Return(wallet_passphrase));
+
+  bool callback_called = false;
+
+  ledger::FetchPromotionCallback fetch_promotion_callback =
+      std::bind(
+          [&callback_called](ledger::Result result,
+              ledger::PromotionList promotions) {
+            callback_called = true;
+            EXPECT_EQ(result, ledger::Result::CORRUPTED_WALLET);
+          },
+      _1, _2);
 
   // Act
+  promotion_->Fetch(fetch_promotion_callback);
 
   // Assert
-}
+  EXPECT_TRUE(callback_called);
+*/  
+} 
 
 // void Claim(
 //     const std::string& payload,
