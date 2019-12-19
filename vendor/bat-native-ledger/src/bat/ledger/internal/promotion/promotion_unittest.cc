@@ -14,6 +14,8 @@
 // npm run test -- brave_unit_tests --filter=PromotionTest.*
 
 using ::testing::_;
+using std::placeholders::_1;
+using std::placeholders::_2;
 
 namespace braveledger_promotion {
 
@@ -33,12 +35,9 @@ class PromotionTest : public testing::Test {
 
   void SetUp() override {
     promotion_ = std::make_unique<Promotion>(mock_ledger_impl_.get());
-  }  
+  }
 };
 
-// void Initialize();
-// Mock Ledger
-// SUCCESS: expect call Promotion::Retry
 TEST_F(PromotionTest, TestInitialize) {
   // Arrange
   EXPECT_CALL(*mock_ledger_impl_, GetAllPromotions(_));
@@ -47,19 +46,38 @@ TEST_F(PromotionTest, TestInitialize) {
   promotion_->Initialize();
 
   // Assert
+  // See Arrange
 }
 
 // void Fetch(ledger::FetchPromotionCallback callback);
-// Mock Ledger w/ empty payment id
-// FAIL: wallet with no payment id; 
-// - expect 'callback' with 'ledger::Result:CORRUPTED_WALLET'
-// - expect ledger_->OnWalletProperties with with 'ledger::Result:CORRUPTED_WALLET'
+
 TEST_F(PromotionTest, TestFetchWithNoWalletPaymentID) {
   // Arrange
+  EXPECT_CALL(*mock_ledger_impl_,
+      OnWalletProperties(ledger::Result::CORRUPTED_WALLET, _));
+  const std::string payment_id = "";
+  ON_CALL(*mock_ledger_impl_, GetPaymentId())
+      .WillByDefault(testing::ReturnRef(payment_id));
+  const std::string wallet_passphrase = "bob";
+  ON_CALL(*mock_ledger_impl_, GetWalletPassphrase())
+      .WillByDefault(testing::Return(wallet_passphrase));
+
+  bool callback_called = false;
+
+  ledger::FetchPromotionCallback fetch_promotion_callback =
+      std::bind(
+          [&callback_called](ledger::Result result,
+              ledger::PromotionList promotions) {
+            callback_called = true;
+            EXPECT_EQ(result, ledger::Result::CORRUPTED_WALLET);
+          },
+      _1, _2);
 
   // Act
+  promotion_->Fetch(fetch_promotion_callback);
 
   // Assert
+  EXPECT_TRUE(callback_called);
 }
 
 // Mock Ledger w/ empty passphrase
