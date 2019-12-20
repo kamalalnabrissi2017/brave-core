@@ -15,9 +15,9 @@ import {
   NextContribution,
   ModalShowAdsHistory,
   ShowAdsHistory,
-  Tokens
-} from '../../ui/components'
-import { Grid, Column, Select, ControlWrapper } from 'brave-ui/components'
+  Tokens} from '../../ui/components'
+
+import {Grid, Column, Select, ControlWrapper, Checkbox} from 'brave-ui/components'
 
 // Utils
 import * as utils from '../utils'
@@ -76,15 +76,24 @@ class AdsBox extends React.Component<Props, State> {
     )
   }
 
-  onAdsSettingChange = (key: string, value: string) => {
+  onEnableSettingChange = (key: string, value: boolean) => {
     let newValue: any = value
     const { adsEnabled } = this.props.rewardsData.adsData
 
     if (key === 'adsEnabled') {
       newValue = !adsEnabled
+      this.props.actions.onAdsSettingSave(key, newValue)
     }
+  }
 
-    this.props.actions.onAdsSettingSave(key, newValue)
+  onShouldAllowAdConversionTrackingSettingChange = (key: string, value: boolean) => {
+    let newValue: any = value
+    const { shouldAllowAdConversionTracking } = this.props.rewardsData.adsData
+
+    if (key === 'shouldAllowAdConversionTracking') {
+      newValue = !shouldAllowAdConversionTracking
+      this.props.actions.onAdsSettingSave(key, newValue)
+    }
   }
 
   adsSettings = (enabled?: boolean) => {
@@ -92,7 +101,7 @@ class AdsBox extends React.Component<Props, State> {
       return null
     }
 
-    const { adsPerHour } = this.props.rewardsData.adsData
+    const { adsPerHour, shouldAllowAdConversionTracking } = this.props.rewardsData.adsData
 
     return (
       <Grid columns={1} customStyle={{ margin: '0 auto' }}>
@@ -100,7 +109,7 @@ class AdsBox extends React.Component<Props, State> {
           <ControlWrapper text={getLocale('adsPerHour')}>
             <Select
               value={adsPerHour.toString()}
-              onChange={this.onAdsSettingChange.bind(this, 'adsPerHour')}
+              onChange={this.onEnableSettingChange.bind(this, 'adsPerHour')}
             >
               {['1', '2', '3', '4', '5'].map((num: string) => {
                 return (
@@ -110,6 +119,18 @@ class AdsBox extends React.Component<Props, State> {
                 )
               })}
             </Select>
+          </ControlWrapper>
+          <ControlWrapper text={getLocale('adsOtherSettings')}>
+            <Checkbox
+              value={{
+                shouldAllowAdConversionTracking: shouldAllowAdConversionTracking
+              }}
+              multiple={true}
+              onChange={this.onShouldAllowAdConversionTrackingSettingChange}
+            >
+              <div data-key='shouldAllowAdConversionTracking'>{getLocale('adsAllowConversionTracking')}</div>
+            </Checkbox>
+            <div>{getLocale('adsAllowConversionTrackingDescription')}</div>
           </ControlWrapper>
         </Column>
       </Grid>
@@ -322,7 +343,7 @@ class AdsBox extends React.Component<Props, State> {
           settingsChild={this.adsSettings(enabled && enabledMain)}
           testId={'braveAdsSettings'}
           disabledContent={showDisabled ? this.adsDisabled() : null}
-          onToggle={this.onAdsSettingChange.bind(this, 'adsEnabled', '')}
+          onToggle={this.onEnableSettingChange.bind(this, 'adsEnabled', '')}
           settingsOpened={this.state.settings}
           onSettingsClick={this.onSettingsToggle}
           attachedAlert={this.adsNotSupportedAlert(adsIsSupported)}
