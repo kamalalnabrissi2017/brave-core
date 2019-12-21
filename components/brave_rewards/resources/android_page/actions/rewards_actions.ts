@@ -37,16 +37,6 @@ export const claimPromotion = (promotionId: string) => action(types.CLAIM_PROMOT
   promotionId
 })
 
-export const onClaimPromotion = (properties: Rewards.Captcha) => action(types.ON_CLAIM_PROMOTION, {
-  properties
-})
-
-export const attestPromotion = (promotionId: string, x: number, y: number) => action(types.ATTEST_PROMOTION, {
-  promotionId,
-  x,
-  y
-})
-
 export const onPromotionFinish = (properties: Rewards.PromotionFinish) => action(types.ON_PROMOTION_FINISH, {
   properties
 })
@@ -278,31 +268,7 @@ export const onBalance = (status: number, balance: Rewards.Balance) => action(ty
   balance
 })
 
-export const getExternalWallet = (type: Rewards.WalletType) => action(types.GET_EXTERNAL_WALLET, {
-  type
-})
-
-export const onExternalWallet = (result: number, wallet: Rewards.ExternalWallet) => action(types.ON_EXTERNAL_WALLET, {
-  result,
-  wallet
-})
-
 export const onOnBoardingDisplayed = () => action(types.ON_ON_BOARDING_DISPLAYED)
-
-export const processRewardsPageUrl = (path: string, query: string) => action(types.PROCESS_REWARDS_PAGE_URL, {
-  path,
-  query
-})
-
-export const onProcessRewardsPageUrl = (data: Rewards.ProcessRewardsPageUrl) => action(types.ON_PROCESS_REWARDS_PAGE_URL, {
-  data
-})
-
-export const hideRedirectModal = () => action(types.HIDE_REDIRECT_MODAL)
-
-export const disconnectWallet = (walletType: string) => action(types.DISCONNECT_WALLET, {
-  walletType
-})
 
 export const onlyAnonWallet = () => action(types.ONLY_ANON_WALLET)
 

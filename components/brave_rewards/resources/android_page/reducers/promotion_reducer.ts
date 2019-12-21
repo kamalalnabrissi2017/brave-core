@@ -83,51 +83,6 @@ const promotionReducer: Reducer<Rewards.State | undefined> = (state: Rewards.Sta
       chrome.send('brave_rewards.claimPromotion', [promotionId])
       break
     }
-    case types.ON_CLAIM_PROMOTION: {
-      const promotionId = payload.properties.promotionId
-      if (!state.promotions || !promotionId) {
-        break
-      }
-
-      const hint = payload.properties.hint
-      const captchaImage = payload.properties.captchaImage
-      const captchaId = payload.properties.captchaId
-
-      const promotions = state.promotions.map((item: Rewards.Promotion) => {
-        if (promotionId === item.promotionId) {
-          item.captchaImage = captchaImage
-          item.captchaId = captchaId
-          item.hint = hint
-        }
-        return item
-      })
-
-      state = {
-        ...state,
-        promotions
-      }
-      break
-    }
-    case types.ATTEST_PROMOTION: {
-      const promotionId = payload.promotionId
-
-      if (!promotionId || !payload.x || !payload.y) {
-        break
-      }
-
-      const currentPromotion = getPromotion(promotionId, state.promotions)
-
-      if (!currentPromotion || !currentPromotion.captchaId) {
-        break
-      }
-
-      chrome.send('brave_rewards.attestPromotion', [promotionId, JSON.stringify({
-        captchaId: currentPromotion.captchaId,
-        x: parseInt(payload.x, 10),
-        y: parseInt(payload.y, 10)
-      })])
-      break
-    }
     case types.RESET_PROMOTION: {
       const promotionId = payload.promotionId
       if (!state.promotions || !promotionId) {
