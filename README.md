@@ -20,3 +20,4 @@ locations:
 - [The Brave Community](https://community.brave.com/)
 - [`community`](https://bravesoftware.slack.com) channel on Brave Software's Slack
 - [`developers-brave`](https://discord.gg/k57tYrS) channel in our Brave Discord server
+[object Object]
